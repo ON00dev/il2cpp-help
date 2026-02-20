@@ -16,14 +16,14 @@ Você pode usar este toolkit de duas maneiras:
 1. **Dentro de um projeto maior** (por exemplo, um mod-menu específico de um jogo):
    - Clone o projeto principal (exemplo):
      ```bash
-     git clone https://github.com/<seu-usuario>/<seu-repo>.git
-     cd <seu-repo>
+     git clone https://github.com/ON00dev/il2cpp-help.git
+     cd il2cpp-help
      ```
    - Coloque a pasta `il2cpp-help/` dentro da raiz desse projeto (ou mantenha como submódulo).
 2. **Como repositório separado apenas da ferramenta**:
    - Clone diretamente:
      ```bash
-     git clone https://github.com/<seu-usuario>/il2cpp-help.git
+     git clone https://github.comON00dev/il2cpp-help.git
      cd il2cpp-help
      ```
    - Use `il2cpp-help/` como raiz de trabalho e mantenha os arquivos de jogo (`enderecos_memoria.txt`, dumps, etc.) em uma pasta ao lado ou num repo específico de jogo.
@@ -31,7 +31,7 @@ Você pode usar este toolkit de duas maneiras:
 Nos exemplos abaixo, vou assumir que:
 
 - Você está **dentro do repositório principal** que contém a pasta `il2cpp-help/`.
-- O terminal já está posicionado na raiz desse repositório (por exemplo, após `cd <seu-repo>`).
+- O terminal já está posicionado na raiz desse repositório (por exemplo, após `cd il2cpp-help`).
 
 ---
 
