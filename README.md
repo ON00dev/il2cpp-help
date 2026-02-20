@@ -9,6 +9,32 @@ Tudo é pensado para ser reaproveitado em qualquer app, mudando apenas os dumps 
 
 ---
 
+## Como clonar e onde colocar esta pasta
+
+Você pode usar este toolkit de duas maneiras:
+
+1. **Dentro de um projeto maior** (por exemplo, um mod-menu específico de um jogo):
+   - Clone o projeto principal (exemplo):
+     ```bash
+     git clone https://github.com/<seu-usuario>/<seu-repo>.git
+     cd <seu-repo>
+     ```
+   - Coloque a pasta `il2cpp-help/` dentro da raiz desse projeto (ou mantenha como submódulo).
+2. **Como repositório separado apenas da ferramenta**:
+   - Clone diretamente:
+     ```bash
+     git clone https://github.com/<seu-usuario>/il2cpp-help.git
+     cd il2cpp-help
+     ```
+   - Use `il2cpp-help/` como raiz de trabalho e mantenha os arquivos de jogo (`enderecos_memoria.txt`, dumps, etc.) em uma pasta ao lado ou num repo específico de jogo.
+
+Nos exemplos abaixo, vou assumir que:
+
+- Você está **dentro do repositório principal** que contém a pasta `il2cpp-help/`.
+- O terminal já está posicionado na raiz desse repositório (por exemplo, após `cd <seu-repo>`).
+
+---
+
 ## Estrutura de pastas
 
 - `GG/`
@@ -124,7 +150,6 @@ Script: `il2cpp-help/tools/normalize_mem_addresses.py`
 Uso (a partir da raiz do projeto principal):
 
 ```bash
-cd c:\Users\Victor\Repo\air-combat-online-mod-menu
 python il2cpp-help\tools\normalize_mem_addresses.py
 ```
 
@@ -182,7 +207,6 @@ Pré-requisitos:
 Uso:
 
 ```bash
-cd c:\Users\Victor\Repo\air-combat-online-mod-menu
 python il2cpp-help\tools\consolidate_rev_data.py
 ```
 
@@ -257,7 +281,6 @@ Campos importantes:
 Uso:
 
 ```bash
-cd c:\Users\Victor\Repo\air-combat-online-mod-menu
 python il2cpp-help\tools\generate_frida.py config_aircombat.json aircombat_mod.js
 ```
 
