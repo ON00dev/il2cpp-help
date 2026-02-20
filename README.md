@@ -298,4 +298,4 @@ frida -U -n <processo> -l aircombat_mod.js
    - Criar `config_<jogo>.json` com as features.
    - Rodar `il2cpp-help/tools/generate_frida.py` → script Frida pronto para uso.
 
-Com isso, grande parte do trabalho pesado de engenharia reversa fica padronizado e reaproveitável entre jogos diferentes.*** End Patch*** 
+Com isso, grande parte do trabalho pesado de engenharia reversa fica padronizado e reaproveitável entre jogos diferentes.
