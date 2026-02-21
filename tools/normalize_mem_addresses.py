@@ -45,7 +45,7 @@ def ask_path(prompt, default_path):
 
 
 def main():
-    default_in = "enderecos_memoria.txt"
+    default_in = "mem_addresses.txt"
     default_out_dir = "out"
     default_ghidra = os.path.join(default_out_dir, "ghidra_addresses.txt")
     default_csv = os.path.join(default_out_dir, "memory_addresses.csv")

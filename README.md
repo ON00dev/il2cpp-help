@@ -26,7 +26,7 @@ Você pode usar este toolkit de duas maneiras:
      git clone https://github.com/ON00dev/il2cpp-help.git
      cd il2cpp-help
      ```
-   - Use `il2cpp-help/` como raiz de trabalho e mantenha os arquivos de jogo (`enderecos_memoria.txt`, dumps, etc.) em uma pasta ao lado ou num repo específico de jogo.
+   - Use `il2cpp-help/` como raiz de trabalho e mantenha os arquivos de jogo (`mem_addresses.txt`, dumps, etc.) em uma pasta ao lado ou num repo específico de jogo.
 
 Nos exemplos abaixo, vou assumir que:
 
@@ -44,13 +44,13 @@ Nos exemplos abaixo, vou assumir que:
   - `auto_mark_and_report.py` – script Python (Jython) que marca endereços e exporta refs para CSV.
   - `auto_mark_and_report.java` – versão equivalente em Java, para usar sem Python/PyGhidra.
 - `tools/`
-  - `normalize_mem_addresses.py` – normaliza `enderecos_memoria.txt` para uso no Ghidra.
+  - `normalize_mem_addresses.py` – normaliza `mem_addresses.txt` para uso no Ghidra.
   - `consolidate_rev_data.py` – junta CSV do GG + CSV do Ghidra em um `re_index.json` único.
   - `generate_frida.py` – gera script Frida a partir de um `config.json` + `re_index.json`.
 
 Arquivos de trabalho esperados na raiz do projeto principal (fora de `il2cpp-help`):
 
-- `enderecos_memoria.txt` – lista de endereços descobertos via GameGuardian.
+- `mem_addresses.txt` – lista de endereços descobertos via GameGuardian.
 - `GG/dumps/...` – dumps gerados pelo `gg_dump_libs.lua` (você copia do device para o PC).
 
 ---
@@ -62,7 +62,7 @@ Arquivos de trabalho esperados na raiz do projeto principal (fora de `il2cpp-hel
    - Rodar `gg_dump_around_results.lua` se quiser dumps locais ao redor de valores encontrados.
 2. No PC:
    - Organizar os dumps em `GG/dumps/` (dentro do repo principal).
-   - Preencher/atualizar `enderecos_memoria.txt` com os endereços achados no GG.
+   - Preencher/atualizar `mem_addresses.txt` com os endereços achados no GG.
    - Rodar `tools/normalize_mem_addresses.py` para gerar arquivos de apoio para o Ghidra.
 3. No Ghidra:
    - Importar dumps mesclados das libs (você pode ter um script de merge separado).
@@ -121,7 +121,7 @@ Fluxo:
 
 Arquivo de entrada esperado na raiz do repo principal:
 
-- `enderecos_memoria.txt`
+- `mem_addresses.txt`
 
 Formatos aceitos:
 
@@ -316,7 +316,7 @@ frida -U -n <processo> -l aircombat_mod.js
    - Opcional: dump local com `gg_dump_around_results.lua`.
 2. PC:
    - Copiar dumps para `GG/dumps/...`.
-   - Registrar endereços em `enderecos_memoria.txt`.
+   - Registrar endereços em `mem_addresses.txt`.
    - Rodar `il2cpp-help/tools/normalize_mem_addresses.py`.
 3. Ghidra:
    - Importar dumps (il2cpp/unity/main).
