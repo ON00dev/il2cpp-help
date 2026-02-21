@@ -1,3 +1,7 @@
 GG_dumps_com.vector.apexcombat.google/
 GG_dumps_results_com.vector.apexcombat.google/
 gg_find_energy_shield.lua
+ghidra_addresses.txt
+libil2cpp.so_merged.bin
+libmain.so_merged.bin
+memory_addresses.csv

@@ -1,2 +1,5 @@
-//coloque aqui cada endereço que deseja varrer no ghidra.
-// exemplo: Ouro;0x79DD13803CBC;DWORD
+//EXEMPLO DE COMO VOCE DEVE COLOCAR OS ENDEREÇES
+
+Ouro;0x79DD13803CBC;DWORD
+Diamante;0x79DD13803CC0;DWORD
+Missil;0x79DC302C0C70;DWORD

@@ -45,31 +45,33 @@ Nos exemplos abaixo, vou assumir que:
   - `auto_mark_and_report.java` – versão equivalente em Java, para usar sem Python/PyGhidra.
 - `tools/`
   - `normalize_mem_addresses.py` – normaliza `mem_addresses.txt` para uso no Ghidra.
-  - `consolidate_rev_data.py` – junta CSV do GG + CSV do Ghidra em um `re_index.json` único.
   - `generate_frida.py` – gera script Frida a partir de um `config.json` + `re_index.json`.
+  - `merge_gg_dumps.py` – mescla páginas de dump das libs em arquivos `_merged.bin` dentro de `il2cpp-help/out`.
+  - `report_local_dumps.py` – gera relatório CSV dos dumps localizados de resultados (`GG_dumps_results_*`).
 
 Arquivos de trabalho esperados na raiz do projeto principal (fora de `il2cpp-help`):
 
 - `mem_addresses.txt` – lista de endereços descobertos via GameGuardian.
-- `GG/dumps/...` – dumps gerados pelo `gg_dump_libs.lua` (você copia do device para o PC).
 
 ---
 
 ## Passo a passo (visão geral)
 
 1. No GameGuardian:
-   - Rodar `gg_dump_libs.lua` para capturar libs importantes (il2cpp, unity, main).
+   - Rodar `gg_dump_libs.lua` para capturar libs importantes (il2cpp, unity, main) para uma sessão/tela específica (ex.: lobby, batalha).
    - Rodar `gg_dump_around_results.lua` se quiser dumps locais ao redor de valores encontrados.
+   - Opcional: usar `gg_find_energy_shield.lua` para ajudar a filtrar candidatos de Energia/Blindagem.
 2. No PC:
-   - Organizar os dumps em `GG/dumps/` (dentro do repo principal).
-   - Preencher/atualizar `mem_addresses.txt` com os endereços achados no GG.
+   - Organizar os dumps em `GG/dumps/` (dentro do repo principal), preservando a estrutura `GG_dumps_<package>/<tag>/`.
+   - Rodar `tools/merge_gg_dumps.py` para gerar `libil2cpp.so_merged.bin` e `libmain.so_merged.bin` em `il2cpp-help/out`.
+   - Preencher/atualizar `enderecos_memoria.txt` com os endereços achados no GG.
    - Rodar `tools/normalize_mem_addresses.py` para gerar arquivos de apoio para o Ghidra.
 3. No Ghidra:
-   - Importar dumps mesclados das libs (você pode ter um script de merge separado).
+   - Importar dumps mesclados das libs a partir de `il2cpp-help/out`.
    - Rodar `ghidra/auto_mark_and_report.py` passando os endereços normalizados.
-   - Salvar o CSV de refs como `out/ghidra_refs.csv`.
+   - Salvar o CSV de refs como `il2cpp-help/out/ghidra_refs.csv`.
 4. No PC novamente:
-   - Rodar `tools/consolidate_rev_data.py` para gerar `out/re_index.json`.
+   - Rodar `tools/consolidate_rev_data.py` para gerar `il2cpp-help/out/re_index.json`.
    - Criar um `config_<jogo>.json` com as features de mod.
    - Rodar `tools/generate_frida.py config_<jogo>.json <saida>.js` para gerar um script Frida de mod.
 
@@ -94,9 +96,10 @@ Fluxo:
      - `Dumpar TODOS os módulos alvo`
      - Ou módulos específicos (`libil2cpp.so`, `libunity.so`, etc.).
 5. Dumps são gravados em:
-   - `/sdcard/Download/GG_dumps_<package>/...`
+   - `/sdcard/Download/GG_dumps_<package>/<tag>/...`
+   - Dentro dessa pasta, cada lib terá subpastas do tipo `libil2cpp.so_<base>`, `libmain.so_<base>`, etc.
 6. Copiar essa pasta inteira para o PC, em:
-   - `GG/dumps/GG_dumps_<package>/`
+   - `GG/dumps/GG_dumps_<package>/<tag>/`
 
 ### 1.2. Dump ao redor de resultados do GG
 
@@ -112,16 +115,41 @@ Fluxo:
    - Ele pega até 500 resultados atuais.
    - Para cada um, dumpa uma janela de ±0x1000 bytes.
    - Os dumps e um `index.txt` são gravados em:
-     - `/sdcard/Download/GG_dumps_results_<package>/`
-4. Copiar essa pasta para o PC se quiser analisar com Ghidra/hexdump.
-
+     - `/sdcard/Download/GG_dumps_results_<package>/<tag>/`
+4. Copiar essa pasta para o PC se quiser analisar com Ghidra/hexdump, em:
+   - `GG/dumps/GG_dumps_results_<package>/<tag>/`
+5. Esses dumps de resultados não são usados no merge das libs, mas podem ser relatados depois com `tools/report_local_dumps.py`.
+   
+### 1.3. Ajuda para encontrar Energia e Blindagem
+   
+Script: `GG/gg_find_energy_shield.lua`
+   
+Fluxo:
+   
+1. Copiar `gg_find_energy_shield.lua` para a pasta de scripts do GG.
+2. Abrir o jogo, selecionar o processo no GG e rodar o script.
+3. Escolher o tipo de valor inicial (`DWORD` ou `FLOAT`).
+4. Usar o menu em etapas:
+   - Energia:
+     - Etapa 1: buscar 100 antes de gastar.
+     - Etapa 2: após gastar (valor cai).
+     - Etapa 3: após regenerar (valor volta para 100).
+   - Blindagem:
+     - Etapa 1: buscar 100 com blindagem cheia.
+     - Etapa 2: após levar dano (cai de 100).
+     - Etapa 3: após regenerar só a Energia (blindagem continua baixa).
+5. Cada etapa é chamada manualmente abrindo o GG; o script fica em loop esperando você abrir o GG de novo, sem depender de caixas de diálogo que travam quando troca de app.
+6. No final de cada fluxo (Energia/Blindagem), ele carrega os candidatos na lista de resultados do GG para você testar/congelar/refinar.
+   
+Esse script não participa direto do pipeline com Ghidra, mas ajuda a encontrar endereços candidatos de Energia/Blindagem para depois registrar em `enderecos_memoria.txt`.
+   
 ---
-
+   
 ## 2. PC – normalizar endereços do GG
 
 Arquivo de entrada esperado na raiz do repo principal:
 
-- `mem_addresses.txt`
+- `enderecos_memoria.txt`
 
 Formatos aceitos:
 
@@ -157,8 +185,16 @@ python il2cpp-help\tools\normalize_mem_addresses.py
 
 Ele gera:
 
-- `out/ghidra_addresses.txt` – lista de endereços em formato `0x...`, um por linha.
-- `out/memory_addresses.csv` – CSV com colunas `name,address,type,module`.
+Ele vai perguntar:
+
+- Caminho do arquivo com endereços do GG (default: `enderecos_memoria.txt`).
+- Caminho de saída para endereços do Ghidra (default: `il2cpp-help/out/ghidra_addresses.txt`).
+- Caminho de saída para CSV normalizado (default: `il2cpp-help/out/memory_addresses.csv`).
+
+Ele gera:
+
+- `il2cpp-help/out/ghidra_addresses.txt` – lista de endereços em formato `0x...`, um por linha.
+- `il2cpp-help/out/memory_addresses.csv` – CSV com colunas `name,address,type,module`.
 
 Esse arquivo `ghidra_addresses.txt` é o que você cola dentro do Ghidra.
 
@@ -170,10 +206,16 @@ Script: `il2cpp-help/ghidra/auto_mark_and_report.py`
 
 ### 3.1. Preparar o programa no Ghidra
 
-1. Mesclar as páginas da lib (il2cpp/unity/main) em um único binário ou importar cada dump por página com o endereço correto.
-2. Importar no Ghidra como `Raw Binary`:
+1. Mesclar as páginas das libs (il2cpp/main) em um único binário usando:
+   - `python il2cpp-help\tools\merge_gg_dumps.py`
+   - O script:
+     - Lista as sessões disponíveis dentro de `GG/dumps/GG_dumps_<package>/<tag>/`.
+     - Ignora automaticamente pastas `GG_dumps_results_*` (que são dumps localizados de resultados do GG).
+     - Gera arquivos como `il2cpp-help/out/libil2cpp.so_merged.bin` e `il2cpp-help/out/libmain.so_merged.bin`.
+   - Por padrão, `libunity.so` não é mesclado para evitar arquivos gigantes; inclua manualmente na lista de libs somente se realmente precisar.
+2. Importar os `_merged.bin` no Ghidra como `Raw Binary`:
    - Language: `AARCH64:LE:64:v8A:default` (para ARM64).
-   - Image Base / Load Address: usar o endereço base real (o mesmo da sessão do dump).
+   - Image Base / Load Address: usar o endereço base real (o mesmo da sessão do dump, mostrado pelo script de merge).
 
 ### 3.2. Rodar o script no Ghidra
 
@@ -195,10 +237,10 @@ Se o seu Ghidra estiver configurado com suporte a Python (PyGhidra ou similar) e
 2. Abrir o programa (por exemplo `libil2cpp_merged.bin`) no Ghidra.
 3. Abrir o Script Manager e executar `auto_mark_and_report.py`.
 4. Quando o script pedir “Endereços”:
-   - Abrir `out/ghidra_addresses.txt` no editor e copiar todo o conteúdo.
+   - Abrir `il2cpp-help/out/ghidra_addresses.txt` no editor e copiar todo o conteúdo.
    - Colar no diálogo do Ghidra (um ou vários endereços, tanto faz).
 5. O script vai pedir um arquivo CSV para salvar o relatório:
-   - Escolher `out/ghidra_refs.csv` (ou salvar com esse nome).
+   - Escolher `il2cpp-help/out/ghidra_refs.csv` (ou salvar com esse nome).
 
 Saída do script:
 
@@ -217,8 +259,8 @@ Script: `il2cpp-help/tools/consolidate_rev_data.py` (o script pergunta pelos cam
 
 Pré-requisitos:
 
-- CSV com endereços normalizados (por padrão `out/memory_addresses.csv`).
-- CSV com refs do Ghidra (por padrão `out/ghidra_refs.csv`).
+- CSV com endereços normalizados (por padrão `il2cpp-help/out/memory_addresses.csv`).
+- CSV com refs do Ghidra (por padrão `il2cpp-help/out/ghidra_refs.csv`).
 
 Uso:
 
@@ -226,7 +268,7 @@ Uso:
 python il2cpp-help\tools\consolidate_rev_data.py
 ```
 
-Saída principal (por padrão `out/re_index.json`), com duas visões:
+Saída principal (por padrão `il2cpp-help/out/re_index.json`), com duas visões:
 
 - `variables`: lista de variáveis que você marcou no GG:
   - `name`, `address`, `type`, `module`
@@ -292,7 +334,7 @@ python il2cpp-help\tools\generate_frida.py config_aircombat.json aircombat_mod.j
 
 Pré-requisito:
 
-- `re_index.json` gerado no passo 4 (por padrão `out/re_index.json`).
+- `re_index.json` gerado no passo 4 (por padrão `il2cpp-help/out/re_index.json`).
 
 Saída:
 
@@ -316,14 +358,14 @@ frida -U -n <processo> -l aircombat_mod.js
    - Opcional: dump local com `gg_dump_around_results.lua`.
 2. PC:
    - Copiar dumps para `GG/dumps/...`.
-   - Registrar endereços em `mem_addresses.txt`.
+   - Registrar endereços em `enderecos_memoria.txt`.
    - Rodar `il2cpp-help/tools/normalize_mem_addresses.py`.
 3. Ghidra:
-   - Importar dumps (il2cpp/unity/main).
-   - Rodar `il2cpp-help/ghidra/auto_mark_and_report.py` com `out/ghidra_addresses.txt`.
-   - Salvar CSV em `out/ghidra_refs.csv`.
+   - Importar dumps mesclados (il2cpp/main) a partir de `il2cpp-help/out`.
+   - Rodar `il2cpp-help/ghidra/auto_mark_and_report.py` com `il2cpp-help/out/ghidra_addresses.txt`.
+   - Salvar CSV em `il2cpp-help/out/ghidra_refs.csv`.
 4. PC:
-   - Rodar `il2cpp-help/tools/consolidate_rev_data.py` → `out/re_index.json`.
+   - Rodar `il2cpp-help/tools/consolidate_rev_data.py` → `il2cpp-help/out/re_index.json`.
    - Criar `config_<jogo>.json` com as features.
    - Rodar `il2cpp-help/tools/generate_frida.py` → script Frida pronto para uso.
 
