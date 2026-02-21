@@ -42,7 +42,7 @@ Nos exemplos abaixo, vou assumir que:
   - `gg_dump_around_results.lua` – dump de memória ao redor de resultados do GG.
 - `ghidra/`
   - `auto_mark_and_report.java` – script Java que marca endereços e exporta refs para CSV.
-  - `import_segments_from_dir.java` – script Java que importa segmentos diretamente dos dumps (`GG_dumps_<package>/<tag>`).
+  - `import_segments_from_dir.java` – script Java que importa segmentos diretamente dos dumps (`GG_dumps_<package>`).
 - `tools/`
   - `normalize_mem_addresses.py` – normaliza `mem_addresses.txt` para uso no Ghidra.
   - `generate_frida.py` – gera script Frida a partir de um `config.json` + `re_index.json`.
@@ -58,16 +58,16 @@ Arquivos de trabalho esperados na raiz do projeto principal (fora de `il2cpp-hel
 ## Passo a passo (visão geral)
 
 1. No GameGuardian:
-   - Rodar `gg_dump_libs.lua` para capturar libs importantes (il2cpp, unity, main) para uma sessão/tela específica (ex.: lobby, batalha).
+   - Rodar `gg_dump_libs.lua` para capturar libs importantes (il2cpp, unity, main) uma vez, com o jogo carregado (ex.: após login ou lobby).
    - Rodar `gg_dump_around_results.lua` se quiser dumps locais ao redor de valores encontrados.
    - Opcional: usar `gg_find_energy_shield.lua` para ajudar a filtrar candidatos de Energia/Blindagem.
 2. No PC:
-   - Organizar os dumps em `GG/dumps/` (dentro do repo principal), preservando a estrutura `GG_dumps_<package>/<tag>/`.
+   - Organizar os dumps em `GG/dumps/` (dentro do repo principal), preservando a estrutura `GG_dumps_<package>/`.
    - (Opcional) Rodar `tools/merge_gg_dumps.py` se quiser gerar `libil2cpp.so_merged.bin` e `libmain.so_merged.bin` em `il2cpp-help/out`.
    - Preencher/atualizar `enderecos_memoria.txt` com os endereços achados no GG.
    - Rodar `tools/normalize_mem_addresses.py` para gerar arquivos de apoio para o Ghidra.
 3. No Ghidra:
-   - Importar segmentos das libs diretamente dos dumps `GG_dumps_<package>/<tag>` usando `ghidra/import_segments_from_dir.java` (ou importar `_merged.bin` se preferir).
+   - Importar segmentos das libs diretamente dos dumps `GG_dumps_<package>` usando `ghidra/import_segments_from_dir.java` (ou importar `_merged.bin` se preferir).
    - Rodar `ghidra/auto_mark_and_report.java` passando os endereços normalizados.
    - Salvar o CSV de refs como `il2cpp-help/out/ghidra_refs.csv`.
 4. No PC novamente:
@@ -91,15 +91,15 @@ Fluxo:
 2. Abrir o jogo.
 3. Abrir o GG, selecionar o processo do jogo.
 4. Rodar `gg_dump_libs.lua`:
-   - O script pede para você deixar o jogo na tela/ação crítica (ex.: pós login, lobby, batalha).
+   - O script pede para você deixar o jogo carregado (por exemplo depois do login ou no lobby).
    - Depois mostra um menu com:
      - `Dumpar TODOS os módulos alvo`
      - Ou módulos específicos (`libil2cpp.so`, `libunity.so`, etc.).
 5. Dumps são gravados em:
-   - `/sdcard/Download/GG_dumps_<package>/<tag>/...`
+   - `/sdcard/Download/GG_dumps_<package>/...`
    - Dentro dessa pasta, cada lib terá subpastas do tipo `libil2cpp.so_<base>`, `libmain.so_<base>`, etc.
 6. Copiar essa pasta inteira para o PC, em:
-   - `GG/dumps/GG_dumps_<package>/<tag>/`
+   - `GG/dumps/GG_dumps_<package>/`
 
 ### 1.2. Dump ao redor de resultados do GG
 
@@ -115,9 +115,9 @@ Fluxo:
    - Ele pega até 500 resultados atuais.
    - Para cada um, dumpa uma janela de ±0x1000 bytes.
    - Os dumps e um `index.txt` são gravados em:
-     - `/sdcard/Download/GG_dumps_results_<package>/<tag>/`
+     - `/sdcard/Download/GG_dumps_results_<package>/`
 4. Copiar essa pasta para o PC se quiser analisar com Ghidra/hexdump, em:
-   - `GG/dumps/GG_dumps_results_<package>/<tag>/`
+   - `GG/dumps/GG_dumps_results_<package>/`
 5. Esses dumps de resultados não são usados no merge das libs, mas podem ser relatados depois com `tools/report_local_dumps.py`.
    
 ### 1.3. Ajuda para encontrar Energia e Blindagem

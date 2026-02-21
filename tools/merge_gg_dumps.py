@@ -1,6 +1,10 @@
 import os
 
 
+GAP_THRESHOLD = 32 * 1024 * 1024
+MAX_TOTAL_SPAN = 5 * 1024 * 1024 * 1024
+
+
 def ask_path(prompt, default_path):
     print(prompt)
     value = input("[" + default_path + "]: ").strip()
@@ -42,17 +46,69 @@ def collect_segments(root_dir, lib_filter):
     return segments
 
 
+def cluster_segments(segments, gap_threshold):
+    if not segments:
+        return []
+    segs = sorted(segments, key=lambda s: s["start"])
+    clusters = []
+    current = [segs[0]]
+    last_end = segs[0]["end"]
+    for seg in segs[1:]:
+        if seg["start"] - last_end > gap_threshold:
+            clusters.append(current)
+            current = [seg]
+        else:
+            current.append(seg)
+        if seg["end"] > last_end:
+            last_end = seg["end"]
+    clusters.append(current)
+    return clusters
+
+
+def coverage(cluster):
+    return sum(s["end"] - s["start"] for s in cluster)
+
+
+def pick_densest_cluster(segments):
+    clusters = cluster_segments(segments, GAP_THRESHOLD)
+    if not clusters:
+        return []
+    if len(clusters) == 1:
+        return clusters[0]
+    print("Foram encontrados %d blocos de memória separados (gaps grandes entre segmentos)." % len(clusters))
+    for idx, cl in enumerate(clusters, start=1):
+        base = min(s["start"] for s in cl)
+        end = max(s["end"] for s in cl)
+        cov = coverage(cl)
+        print(
+            "%d) base=0x%X fim=0x%X span=%d bytes, cobertura real=%d bytes"
+            % (idx, base, end, end - base, cov)
+        )
+    best = max(clusters, key=coverage)
+    base = min(s["start"] for s in best)
+    end = max(s["end"] for s in best)
+    print(
+        "Usando bloco mais denso: base=0x%X fim=0x%X span=%d bytes (cobertura %d bytes)."
+        % (base, end, end - base, coverage(best))
+    )
+    return best
+
+
 def merge_segments(segments, out_path):
     if not segments:
         print("Nenhum segmento encontrado.")
         return
-    segments.sort(key=lambda s: s["start"])
-    base = segments[0]["start"]
-    last_end = max(s["end"] for s in segments)
+    selected = pick_densest_cluster(segments)
+    if not selected:
+        print("Nenhum segmento selecionado para merge.")
+        return
+    selected.sort(key=lambda s: s["start"])
+    base = selected[0]["start"]
+    last_end = max(s["end"] for s in selected)
     total = last_end - base
-    if total > 5 * 1024 * 1024 * 1024:
+    if total > MAX_TOTAL_SPAN:
         print(
-            "Intervalo virtual muito grande (%.2f GB). Provavelmente há gaps enormes entre segmentos."
+            "Intervalo virtual muito grande (%.2f GB) mesmo após filtragem por bloco denso."
             % (total / (1024 * 1024 * 1024))
         )
         print("Ignorando merge para evitar arquivo gigante:", out_path)
@@ -62,7 +118,7 @@ def merge_segments(segments, out_path):
     print("Tamanho total aproximado: %d bytes" % total)
     with open(out_path, "wb") as out:
         out.truncate(total)
-        for seg in segments:
+        for seg in selected:
             rel_off = seg["start"] - base
             print("Escrevendo %s em offset 0x%X" % (seg["path"], rel_off))
             with open(seg["path"], "rb") as f:
@@ -84,18 +140,7 @@ def find_sessions(base_root):
         pkg_path = os.path.join(base_root, pkg_dir)
         if not os.path.isdir(pkg_path):
             continue
-        subdirs = [
-            d
-            for d in os.listdir(pkg_path)
-            if os.path.isdir(os.path.join(pkg_path, d))
-        ]
-        if subdirs:
-            for tag in subdirs:
-                session_path = os.path.join(pkg_path, tag)
-                label = pkg_dir + "/" + tag
-                sessions.append((label, session_path))
-        else:
-            sessions.append((pkg_dir, pkg_path))
+        sessions.append((pkg_dir, pkg_path))
     return sessions
 
 

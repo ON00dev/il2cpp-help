@@ -28,6 +28,10 @@ public class import_segments_from_dir extends GhidraScript {
 
     @Override
     public void run() throws Exception {
+        if (currentProgram == null) {
+            println("Nenhum Program ativo. Abra/crie um Program no CodeBrowser e rode o script a partir dele.");
+            return;
+        }
         File sessionDir = askDirectory("Selecione a pasta da sessão (GG_dumps_<package>/<tag>)", "Selecionar");
         if (sessionDir == null) {
             return;

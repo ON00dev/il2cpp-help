@@ -2,22 +2,22 @@ Pasta de trabalho para os dumps copiados do GameGuardian.
 
 Estrutura esperada (após copiar do `/sdcard/Download/` do device):
 
-- `GG_dumps_<package>/<tag>/...`
+- `GG_dumps_<package>/...`
   - Gerado por `gg_dump_libs.lua`.
   - Contém subpastas como:
     - `libil2cpp.so_<base>/...`
     - `libmain.so_<base>/...`
-  - É essa pasta `<package>/<tag>` que você seleciona no script:
+  - É essa pasta `GG_dumps_<package>` que você seleciona no script:
     - `python il2cpp-help\tools\merge_gg_dumps.py`
   - O script:
-    - Lista as sessões disponíveis dentro desta pasta.
+    - Lista os pacotes disponíveis dentro desta pasta.
     - Ignora automaticamente qualquer diretório `GG_dumps_results_*`.
     - Gera arquivos mesclados em `il2cpp-help/out/`:
       - `libil2cpp.so_merged.bin`
       - `libmain.so_merged.bin`
       - (opcionalmente `libunity.so_merged.bin`, se você incluir manualmente na lista).
 
-- `GG_dumps_results_<package>/<tag>/...`
+- `GG_dumps_results_<package>/...`
   - Gerado por `gg_dump_around_results.lua`.
   - São dumps localizados (janelas de memória) ao redor de endereços específicos.
   - Não são usados no merge das libs.
@@ -28,4 +28,4 @@ Estrutura esperada (após copiar do `/sdcard/Download/` do device):
     - Endereço inicial (`start`)
     - Endereço final (`end`)
     - Endereço central (`center`)
-    - `package` e `tag` para referência futura no Ghidra.
+    - `package` para referência futura no Ghidra.
