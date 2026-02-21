@@ -2,11 +2,6 @@ import os
 import re
 import csv
 
-INPUT_FILE = "enderecos_memoria.txt"
-OUT_DIR = "out"
-OUT_GHIDRA = os.path.join(OUT_DIR, "ghidra_addresses.txt")
-OUT_CSV = os.path.join(OUT_DIR, "memory_addresses.csv")
-
 
 def parse_line(line):
     s = line.strip()
@@ -43,14 +38,31 @@ def normalize_addr(addr_str):
     return "0x" + s.upper()
 
 
+def ask_path(prompt, default_path):
+    print(prompt)
+    value = input("[" + default_path + "]: ").strip()
+    if not value:
+        return default_path
+    return value
+
+
 def main():
-    if not os.path.isfile(INPUT_FILE):
-        print("Arquivo de entrada não encontrado:", INPUT_FILE)
+    default_in = "enderecos_memoria.txt"
+    default_out_dir = "out"
+    default_ghidra = os.path.join(default_out_dir, "ghidra_addresses.txt")
+    default_csv = os.path.join(default_out_dir, "memory_addresses.csv")
+    input_file = ask_path("Caminho do arquivo com endereços do GG", default_in)
+    out_ghidra = ask_path("Caminho de saída para endereços do Ghidra", default_ghidra)
+    out_csv = ask_path("Caminho de saída para CSV normalizado", default_csv)
+    out_dir = os.path.dirname(out_ghidra) or "."
+    if not os.path.isfile(input_file):
+        print("Arquivo de entrada não encontrado:", input_file)
         return
-    os.makedirs(OUT_DIR, exist_ok=True)
+    os.makedirs(out_dir, exist_ok=True)
+    os.makedirs(os.path.dirname(out_csv) or ".", exist_ok=True)
     rows = []
     addrs = []
-    with open(INPUT_FILE, "r", encoding="utf-8", errors="ignore") as f:
+    with open(input_file, "r", encoding="utf-8", errors="ignore") as f:
         for line in f:
             parsed = parse_line(line)
             if not parsed:
@@ -69,20 +81,19 @@ def main():
             )
             addrs.append(addr_norm)
     if not rows:
-        print("Nenhum endereço válido encontrado em", INPUT_FILE)
+        print("Nenhum endereço válido encontrado em", input_file)
         return
-    with open(OUT_GHIDRA, "w", encoding="utf-8") as g:
+    with open(out_ghidra, "w", encoding="utf-8") as g:
         for a in addrs:
             g.write(a + "\n")
-    with open(OUT_CSV, "w", encoding="utf-8", newline="") as c:
+    with open(out_csv, "w", encoding="utf-8", newline="") as c:
         w = csv.DictWriter(c, fieldnames=["name", "address", "type", "module"])
         w.writeheader()
         for r in rows:
             w.writerow(r)
-    print("Gerado", OUT_GHIDRA, "com", len(addrs), "endereços")
-    print("Gerado", OUT_CSV, "com", len(rows), "linhas")
+    print("Gerado", out_ghidra, "com", len(addrs), "endereços")
+    print("Gerado", out_csv, "com", len(rows), "linhas")
 
 
 if __name__ == "__main__":
     main()
-

@@ -17,6 +17,18 @@ end
 
 gg.alert('Deixe o jogo exatamente na tela ou ação crítica que você quer capturar (por exemplo depois do login, lobby, ou tela protegida).\n\nQuando estiver pronto, toque OK.')
 
+local tagInput = gg.prompt(
+  {'Nome para este dump (ex: lobby, batalha1, loja)'}, 
+  {os.date('%Y%m%d_%H%M%S')}, 
+  {'text'}
+)
+local dumpTag = os.date('%Y%m%d_%H%M%S')
+if tagInput ~= nil and tagInput[1] ~= nil and tagInput[1] ~= '' then
+  dumpTag = tagInput[1]
+end
+dumpTag = dumpTag:gsub('%s+', '_')
+dumpTag = dumpTag:gsub('[^%w_%-%.]', '')
+
 local mods = {}
 
 gg.setRanges(gg.REGION_CODE_APP | gg.REGION_C_ALLOC | gg.REGION_ANONYMOUS | gg.REGION_OTHER)
@@ -43,12 +55,12 @@ end
 
 table.insert(items, 1, 'Dumpar TODOS os módulos alvo')
 
-local choice = gg.choice(items, nil, 'Selecione qual módulo deseja dumpar.\nOs dumps serão salvos como páginas de memória em:\n/sdcard/Download/GG_dumps_' .. pkg)
+local choice = gg.choice(items, nil, 'Selecione qual módulo deseja dumpar.\nOs dumps serão salvos como páginas de memória em:\n/sdcard/Download/GG_dumps_' .. pkg .. '/' .. dumpTag)
 if not choice then
   os.exit()
 end
 
-local outRoot = '/sdcard/Download/GG_dumps_' .. pkg
+local outRoot = '/sdcard/Download/GG_dumps_' .. pkg .. '/' .. dumpTag
 
 local function dumpModule(name)
   local rs = mods[name]

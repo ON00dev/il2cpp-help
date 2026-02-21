@@ -9,7 +9,20 @@ end
 
 local pkg = gg.getTargetPackage() or 'unknown'
 local radius = 0x1000
-local outRoot = '/sdcard/Download/GG_dumps_results_' .. pkg
+
+local tagInput = gg.prompt(
+  {'Nome para este dump de resultados (ex: lobby, batalha1)'}, 
+  {os.date('%Y%m%d_%H%M%S')}, 
+  {'text'}
+)
+local dumpTag = os.date('%Y%m%d_%H%M%S')
+if tagInput ~= nil and tagInput[1] ~= nil and tagInput[1] ~= '' then
+  dumpTag = tagInput[1]
+end
+dumpTag = dumpTag:gsub('%s+', '_')
+dumpTag = dumpTag:gsub('[^%w_%-%.]', '')
+
+local outRoot = '/sdcard/Download/GG_dumps_results_' .. pkg .. '/' .. dumpTag
 
 local logPath = outRoot .. '/index.txt'
 os.remove(logPath)
@@ -38,4 +51,3 @@ end
 
 gg.alert('Dump ao redor dos resultados concluído em:\n' .. outRoot)
 os.exit()
-

@@ -1,17 +1,24 @@
 import json
 import sys
 
+
 def load_json(path):
     with open(path, "r", encoding="utf-8") as f:
         return json.load(f)
 
+
 def index_re_data(re_data):
     by_name = {}
-    for entry in re_data:
+    if isinstance(re_data, dict):
+        items = re_data.get("variables", [])
+    else:
+        items = re_data
+    for entry in items:
         key = entry.get("name", "")
         if key:
             by_name[key] = entry
     return by_name
+
 
 def gen_write_snippet(var_entry, feature):
     addr = var_entry["address"]
@@ -24,6 +31,7 @@ def gen_write_snippet(var_entry, feature):
     else:
         write = "Memory.writeU32(ptr(\"%s\"), %s)" % (addr, val)
     return write
+
 
 def gen_hook_snippet(var_entry, feature):
     func_name = feature.get("preferred_function", "")
@@ -50,6 +58,7 @@ def gen_hook_snippet(var_entry, feature):
     s.append("});")
     return "\n".join(s)
 
+
 def gen_frida(config, re_index_data):
     vars_by_name = index_re_data(re_index_data)
     lines = []
@@ -70,19 +79,27 @@ def gen_frida(config, re_index_data):
     lines.append("});")
     return "\n".join(lines)
 
+
 def main():
     if len(sys.argv) < 3:
-        print("uso: python generate_frida.py config.json out.js")
+        print("uso: python generate_frida.py config.json out.js [re_index.json]")
         return
     cfg_path = sys.argv[1]
     out_js = sys.argv[2]
+    if len(sys.argv) >= 4:
+        re_index_path = sys.argv[3]
+    else:
+        default_re = "out/re_index.json"
+        print("Caminho do re_index.json")
+        value = input("[" + default_re + "]: ").strip()
+        re_index_path = value or default_re
     config = load_json(cfg_path)
-    re_index = load_json("out/re_index.json")
+    re_index = load_json(re_index_path)
     code = gen_frida(config, re_index)
     with open(out_js, "w", encoding="utf-8") as f:
         f.write(code)
     print("Gerado", out_js)
 
+
 if __name__ == "__main__":
     main()
-

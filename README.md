@@ -23,7 +23,11 @@ Você pode usar este toolkit de duas maneiras:
 2. **Como repositório separado apenas da ferramenta**:
    - Clone diretamente:
      ```bash
+<<<<<<< HEAD
      git clone https://github.comON00dev/il2cpp-help.git
+=======
+     git clone https://github.com/ON00dev/il2cpp-help.git
+>>>>>>> 8fbed5a (Adicionado prompts fáceis de usar e melhore a flexibilidade da ferramenta)
      cd il2cpp-help
      ```
    - Use `il2cpp-help/` como raiz de trabalho e mantenha os arquivos de jogo (`enderecos_memoria.txt`, dumps, etc.) em uma pasta ao lado ou num repo específico de jogo.
@@ -41,7 +45,8 @@ Nos exemplos abaixo, vou assumir que:
   - `gg_dump_libs.lua` – dump de `libil2cpp.so`, `libunity.so`, `libmain.so`, etc.
   - `gg_dump_around_results.lua` – dump de memória ao redor de resultados do GG.
 - `ghidra/`
-  - `auto_mark_and_report.py` – script Jython que marca endereços e exporta refs para CSV.
+  - `auto_mark_and_report.py` – script Python (Jython) que marca endereços e exporta refs para CSV.
+  - `auto_mark_and_report.java` – versão equivalente em Java, para usar sem Python/PyGhidra.
 - `tools/`
   - `normalize_mem_addresses.py` – normaliza `enderecos_memoria.txt` para uso no Ghidra.
   - `consolidate_rev_data.py` – junta CSV do GG + CSV do Ghidra em um `re_index.json` único.
@@ -147,7 +152,7 @@ Var #7DB2E309A500 (DWORD/WORD) Missil
 
 Script: `il2cpp-help/tools/normalize_mem_addresses.py`
 
-Uso (a partir da raiz do projeto principal):
+Uso (a partir da raiz do projeto principal, o script vai perguntar pelos caminhos e sugerir padrões):
 
 ```bash
 python il2cpp-help\tools\normalize_mem_addresses.py
@@ -175,6 +180,20 @@ Script: `il2cpp-help/ghidra/auto_mark_and_report.py`
 
 ### 3.2. Rodar o script no Ghidra
 
+Você tem duas opções, dependendo do suporte a Python no seu Ghidra:
+
+### Opção A – Usar a versão Java (recomendado se aparecer erro de Python)
+
+Esta opção não depende de PyGhidra nem de nenhuma integração extra de Python.
+
+1. Copiar `il2cpp-help/ghidra/auto_mark_and_report.java` para a pasta de scripts do Ghidra ou adicionar a pasta via Script Manager.
+2. No Script Manager, filtrar por linguagem `Java` e localizar `auto_mark_and_report`.
+3. Executar o script normalmente e seguir o mesmo fluxo descrito abaixo (os diálogos são os mesmos).
+
+### Opção B – Usar a versão Python/Jython
+
+Se o seu Ghidra estiver configurado com suporte a Python (PyGhidra ou similar) e **não** aparecer a mensagem “Python is not available”, você pode usar a versão `.py`:
+
 1. Copiar `il2cpp-help/ghidra/auto_mark_and_report.py` para a pasta de scripts do Ghidra, ou adicionar a pasta via Script Manager.
 2. Abrir o programa (por exemplo `libil2cpp_merged.bin`) no Ghidra.
 3. Abrir o Script Manager e executar `auto_mark_and_report.py`.
@@ -197,12 +216,12 @@ Esse CSV é usado na próxima etapa.
 
 ## 4. PC – consolidar dados em `re_index.json`
 
-Script: `il2cpp-help/tools/consolidate_rev_data.py`
+Script: `il2cpp-help/tools/consolidate_rev_data.py` (o script pergunta pelos caminhos dos arquivos)
 
 Pré-requisitos:
 
-- `out/memory_addresses.csv` (do passo 2).
-- `out/ghidra_refs.csv` (do passo 3).
+- CSV com endereços normalizados (por padrão `out/memory_addresses.csv`).
+- CSV com refs do Ghidra (por padrão `out/ghidra_refs.csv`).
 
 Uso:
 
@@ -210,28 +229,18 @@ Uso:
 python il2cpp-help\tools\consolidate_rev_data.py
 ```
 
-Saída:
+Saída principal (por padrão `out/re_index.json`), com duas visões:
 
-- `out/re_index.json`
+- `variables`: lista de variáveis que você marcou no GG:
+  - `name`, `address`, `type`, `module`
+  - `refs`: lista de refs cruas com `address` (call site) e `function` (nome da função no Ghidra).
+- `functions`: lista de funções que tocam nessas variáveis:
+  - `name`: nome da função (ex.: `Health_ApplyDamage`).
+  - `module`: módulo associado (ex.: `libil2cpp`).
+  - `call_sites`: lista de endereços onde a função aparece como referência.
+  - `variables`: lista de variáveis associadas àquela função, cada uma com `name/address/type/module`.
 
-Estrutura simplificada de cada entrada no JSON:
-
-```json
-{
-  "name": "Moedas",
-  "address": "0x7DB3D3F71CBC",
-  "type": "DWORD",
-  "module": "libil2cpp",
-  "refs": [
-    {
-      "address": "0x7CAE19212345",
-      "function": "Player_AddCoins"
-    }
-  ]
-}
-```
-
-Esse arquivo é a base para geração de scripts de mod (Frida, etc.).
+Essa visão orientada a funções é a que você usa para localizar e alterar métodos no smali/mod menu.
 
 ---
 
@@ -281,12 +290,12 @@ Campos importantes:
 Uso:
 
 ```bash
-python il2cpp-help\tools\generate_frida.py config_aircombat.json aircombat_mod.js
+python il2cpp-help\tools\generate_frida.py config_aircombat.json aircombat_mod.js [caminho_do_re_index.json]
 ```
 
 Pré-requisito:
 
-- `out/re_index.json` gerado no passo 4.
+- `re_index.json` gerado no passo 4 (por padrão `out/re_index.json`).
 
 Saída:
 
