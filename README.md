@@ -2,8 +2,8 @@
 
 Toolkit para acelerar engenharia reversa de jogos/app IL2CPP usando:
 - GameGuardian (dump em runtime)
-- Ghidra (análise estática)
-- Python (normalização e geração de scripts)
+- Ghidra (análise estática, com scripts Java)
+- Python (normalização e geração de scripts no PC)
 
 Tudo é pensado para ser reaproveitado em qualquer app, mudando apenas os dumps e os endereços que você descobriu.
 
@@ -41,8 +41,8 @@ Nos exemplos abaixo, vou assumir que:
   - `gg_dump_libs.lua` – dump de `libil2cpp.so`, `libunity.so`, `libmain.so`, etc.
   - `gg_dump_around_results.lua` – dump de memória ao redor de resultados do GG.
 - `ghidra/`
-  - `auto_mark_and_report.py` – script Python (Jython) que marca endereços e exporta refs para CSV.
-  - `auto_mark_and_report.java` – versão equivalente em Java, para usar sem Python/PyGhidra.
+  - `auto_mark_and_report.java` – script Java que marca endereços e exporta refs para CSV.
+  - `import_segments_from_dir.java` – script Java que importa segmentos diretamente dos dumps (`GG_dumps_<package>/<tag>`).
 - `tools/`
   - `normalize_mem_addresses.py` – normaliza `mem_addresses.txt` para uso no Ghidra.
   - `generate_frida.py` – gera script Frida a partir de um `config.json` + `re_index.json`.
@@ -63,12 +63,12 @@ Arquivos de trabalho esperados na raiz do projeto principal (fora de `il2cpp-hel
    - Opcional: usar `gg_find_energy_shield.lua` para ajudar a filtrar candidatos de Energia/Blindagem.
 2. No PC:
    - Organizar os dumps em `GG/dumps/` (dentro do repo principal), preservando a estrutura `GG_dumps_<package>/<tag>/`.
-   - Rodar `tools/merge_gg_dumps.py` para gerar `libil2cpp.so_merged.bin` e `libmain.so_merged.bin` em `il2cpp-help/out`.
+   - (Opcional) Rodar `tools/merge_gg_dumps.py` se quiser gerar `libil2cpp.so_merged.bin` e `libmain.so_merged.bin` em `il2cpp-help/out`.
    - Preencher/atualizar `enderecos_memoria.txt` com os endereços achados no GG.
    - Rodar `tools/normalize_mem_addresses.py` para gerar arquivos de apoio para o Ghidra.
 3. No Ghidra:
-   - Importar dumps mesclados das libs a partir de `il2cpp-help/out`.
-   - Rodar `ghidra/auto_mark_and_report.py` passando os endereços normalizados.
+   - Importar segmentos das libs diretamente dos dumps `GG_dumps_<package>/<tag>` usando `ghidra/import_segments_from_dir.java` (ou importar `_merged.bin` se preferir).
+   - Rodar `ghidra/auto_mark_and_report.java` passando os endereços normalizados.
    - Salvar o CSV de refs como `il2cpp-help/out/ghidra_refs.csv`.
 4. No PC novamente:
    - Rodar `tools/consolidate_rev_data.py` para gerar `il2cpp-help/out/re_index.json`.
@@ -200,42 +200,37 @@ Esse arquivo `ghidra_addresses.txt` é o que você cola dentro do Ghidra.
 
 ---
 
-## 3. Ghidra – marcar endereços e exportar referências
+## 3. Ghidra – importar dumps, marcar endereços e exportar referências
 
-Script: `il2cpp-help/ghidra/auto_mark_and_report.py`
+Scripts Java:
 
-### 3.1. Preparar o programa no Ghidra
+- `il2cpp-help/ghidra/import_segments_from_dir.java`
+- `il2cpp-help/ghidra/auto_mark_and_report.java`
 
-1. Mesclar as páginas das libs (il2cpp/main) em um único binário usando:
-   - `python il2cpp-help\tools\merge_gg_dumps.py`
-   - O script:
-     - Lista as sessões disponíveis dentro de `GG/dumps/GG_dumps_<package>/<tag>/`.
-     - Ignora automaticamente pastas `GG_dumps_results_*` (que são dumps localizados de resultados do GG).
-     - Gera arquivos como `il2cpp-help/out/libil2cpp.so_merged.bin` e `il2cpp-help/out/libmain.so_merged.bin`.
-   - Por padrão, `libunity.so` não é mesclado para evitar arquivos gigantes; inclua manualmente na lista de libs somente se realmente precisar.
-2. Importar os `_merged.bin` no Ghidra como `Raw Binary`:
-   - Language: `AARCH64:LE:64:v8A:default` (para ARM64).
-   - Image Base / Load Address: usar o endereço base real (o mesmo da sessão do dump, mostrado pelo script de merge).
+### 3.1. Importar segmentos diretamente dos dumps
 
-### 3.2. Rodar o script no Ghidra
+Em vez de gerar um `_merged.bin` gigante, o fluxo recomendado é criar blocos de memória a partir dos próprios dumps `GG_dumps_<package>/<tag>`, usando o script Java.
 
-Você tem duas opções, dependendo do suporte a Python no seu Ghidra:
+1. Copiar `il2cpp-help/ghidra/import_segments_from_dir.java` para a pasta de scripts do Ghidra ou adicionar a pasta via Script Manager.
+2. Criar um programa vazio no projeto (por exemplo, um novo programa “raw” para ARM64).
+3. Abrir o Script Manager, filtrar por linguagem `Java` e executar `import_segments_from_dir`.
+4. Quando o script pedir a pasta da sessão, selecionar:
+   - `GG/dumps/GG_dumps_<package>/<tag>/`
+5. Quando pedir o nome da biblioteca, informar:
+   - `libil2cpp.so` (ou `libmain.so`, conforme o que você quer importar).
+6. O script:
+   - Procura subpastas como `libil2cpp.so_<base>` dentro da sessão.
+   - Para cada `.bin` no padrão `...-<start>-<end>.bin`, cria um bloco de memória em `currentProgram` no intervalo `[start, end)`.
+   - Marca os blocos como somente leitura (read = true, write = false, execute = false).
+7. Depois de importar os segmentos, você pode rodar a análise do Ghidra normalmente nesse programa.
 
-### Opção A – Usar a versão Java (recomendado se aparecer erro de Python)
+Se preferir continuar com `_merged.bin`, ainda pode usar `tools/merge_gg_dumps.py` e importar o binário como `Raw Binary`, mas o fluxo com `import_segments_from_dir.java` evita problemas de memória (heap) em merges muito grandes.
 
-Esta opção não depende de PyGhidra nem de nenhuma integração extra de Python.
+### 3.2. Rodar o `auto_mark_and_report.java` no Ghidra
 
 1. Copiar `il2cpp-help/ghidra/auto_mark_and_report.java` para a pasta de scripts do Ghidra ou adicionar a pasta via Script Manager.
-2. No Script Manager, filtrar por linguagem `Java` e localizar `auto_mark_and_report`.
-3. Executar o script normalmente e seguir o mesmo fluxo descrito abaixo (os diálogos são os mesmos).
-
-### Opção B – Usar a versão Python/Jython
-
-Se o seu Ghidra estiver configurado com suporte a Python (PyGhidra ou similar) e **não** aparecer a mensagem “Python is not available”, você pode usar a versão `.py`:
-
-1. Copiar `il2cpp-help/ghidra/auto_mark_and_report.py` para a pasta de scripts do Ghidra, ou adicionar a pasta via Script Manager.
-2. Abrir o programa (por exemplo `libil2cpp_merged.bin`) no Ghidra.
-3. Abrir o Script Manager e executar `auto_mark_and_report.py`.
+2. Abrir no Ghidra o programa onde os blocos de memória das libs já estão carregados (via `import_segments_from_dir.java` ou import de `_merged.bin`).
+3. Abrir o Script Manager, filtrar por `Java` e executar `auto_mark_and_report`.
 4. Quando o script pedir “Endereços”:
    - Abrir `il2cpp-help/out/ghidra_addresses.txt` no editor e copiar todo o conteúdo.
    - Colar no diálogo do Ghidra (um ou vários endereços, tanto faz).
@@ -361,8 +356,8 @@ frida -U -n <processo> -l aircombat_mod.js
    - Registrar endereços em `enderecos_memoria.txt`.
    - Rodar `il2cpp-help/tools/normalize_mem_addresses.py`.
 3. Ghidra:
-   - Importar dumps mesclados (il2cpp/main) a partir de `il2cpp-help/out`.
-   - Rodar `il2cpp-help/ghidra/auto_mark_and_report.py` com `il2cpp-help/out/ghidra_addresses.txt`.
+   - Importar segmentos das libs (il2cpp/main) a partir de `GG/dumps/...` com `il2cpp-help/ghidra/import_segments_from_dir.java` (ou importar `_merged.bin` se preferir).
+   - Rodar `il2cpp-help/ghidra/auto_mark_and_report.java` com `il2cpp-help/out/ghidra_addresses.txt`.
    - Salvar CSV em `il2cpp-help/out/ghidra_refs.csv`.
 4. PC:
    - Rodar `il2cpp-help/tools/consolidate_rev_data.py` → `il2cpp-help/out/re_index.json`.
