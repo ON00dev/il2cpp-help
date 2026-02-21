@@ -18,14 +18,12 @@ def parse_line(line):
         vtype = parts[2] if len(parts) > 2 else ""
         module = parts[3] if len(parts) > 3 else ""
         return name, addr, vtype, module
-    m = re.match(r"Var\s+#([0-9A-Fa-f]+)\s*\(([^)]+)\)\s*(.*)", s)
-    if m:
-        addr_hex = m.group(1)
-        vtype = m.group(2).strip()
-        name = m.group(3).strip()
-        if not name:
-            name = "Var_" + addr_hex.upper()
-        return name, addr_hex, vtype, ""
+    m2 = re.match(r"(.+?)\s+#([0-9A-Fa-fx]+)\s+(.+)", s)
+    if m2:
+        name = m2.group(1).strip()
+        addr = m2.group(2).strip()
+        vtype = m2.group(3).strip()
+        return name, addr, vtype, ""
     return None
 
 

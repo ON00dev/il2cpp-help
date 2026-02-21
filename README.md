@@ -23,11 +23,7 @@ Você pode usar este toolkit de duas maneiras:
 2. **Como repositório separado apenas da ferramenta**:
    - Clone diretamente:
      ```bash
-<<<<<<< HEAD
-     git clone https://github.comON00dev/il2cpp-help.git
-=======
      git clone https://github.com/ON00dev/il2cpp-help.git
->>>>>>> 8fbed5a (Adicionado prompts fáceis de usar e melhore a flexibilidade da ferramenta)
      cd il2cpp-help
      ```
    - Use `il2cpp-help/` como raiz de trabalho e mantenha os arquivos de jogo (`enderecos_memoria.txt`, dumps, etc.) em uma pasta ao lado ou num repo específico de jogo.
@@ -129,7 +125,7 @@ Arquivo de entrada esperado na raiz do repo principal:
 
 Formatos aceitos:
 
-1. Formato “novo” (recomendado), separado por `;`:
+1. Formato “novo” (recomendado), separado por `;` (sem módulo obrigatório):
 
 ```text
 Nome;0xENDERECO;Tipo;Modulo
@@ -139,14 +135,15 @@ VidaEscudo;0x7DB3E1D5A98C;FLOAT;libil2cpp
 Missil;0x7DB2E309A500;DWORD;libil2cpp
 ```
 
-2. Formato “antigo” (compatível com anotações do GG):
+2. Formato “livre” anotado à mão, sem módulo, usando `Nome #ENDERECO Tipo`:
 
 ```text
-Var #7DB3D3F71CBC (DWORD) Moedas
-Var #7DB3D3F71CC0 (DWORD) Gemas
-Var #7DB3E1D5A98C (FLOAT) VidaEscudo
-Var #7DB2E309A500 (DWORD/WORD) Missil
+Moedas #7DB3D3F71CBC DWORD
+Gemas #7DB3D3F71CC0 DWORD
+VidaEscudo #7DB3E1D5A98C FLOAT
+Missil #7DB2E309A500 DWORD/WORD
 ```
+
 
 ### 2.1. Normalizar endereços para o Ghidra
 
