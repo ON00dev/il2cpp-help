@@ -37,6 +37,8 @@ end
 
 gg.alert('Serão dumpados ' .. #results .. ' endereços, cada um com janela de ' .. string.format('0x%X', radius) .. ' bytes para cada lado.')
 
+local frozenItems = {}
+
 for i, r in ipairs(results) do
   local center = r.address
   local from = center - radius
@@ -47,6 +49,17 @@ for i, r in ipairs(results) do
   local dir = outRoot .. '/' .. string.format('%016X', center)
   gg.dumpMemory(from, to, dir)
   writeLog(string.format('addr=0x%016X type=%d file=%s', center, r.flags, dir))
+  table.insert(frozenItems, {
+    address = center,
+    flags = r.flags,
+    value = r.value,
+    freeze = true,
+    name = r.name
+  })
+end
+
+if #frozenItems > 0 then
+  gg.addListItems(frozenItems)
 end
 
 gg.alert('Dump ao redor dos resultados concluído em:\n' .. outRoot)
